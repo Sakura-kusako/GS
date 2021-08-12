@@ -1,14 +1,30 @@
+CC := gcc
 
-all: clean client client_debug
+SERVER_OUTPUT := gs_server.out
+CLIENT_OUTPUT := gs_client.out
+CLIENT_DEBUG_OUTPUT := gs_client_bebug.out
 
-client:
-    gcc -o gs_client.exe gs_client_main.c gs_os_windows.c gs_socket_windows.c gs_app_protocol.c gs_console.c -O2 -Werror -Wall -lwsock32 -lws2_32 -DGS_PLATFORM_WINDOWS
+BASE_SRCS := gs_app_protocol.o gs_console.o gs_os_linux.o gs_socket_linux.o
+SERVER_SRCS := gs_client_main.o
+CLIENT_SRCS := gs_server_main.o
+CLIENT_DEBUG_SRCS := gs_client_debug.o
 
-server:
-	gcc -o gs_server.exe gs_server_main.c gs_os_windows.c gs_socket_windows.c gs_app_protocol.c gs_console.c -O2 -Werror -Wall -lwsock32 -DGS_PLATFORM_WINDOWS
+CFLAGS := -O2 -Werror -Wall -Wno-unused-result -DGS_PLATFORM_LINUX -pthread
 
-client_debug:
-    gcc -o gs_client_bebug.exe gs_client_debug.c gs_os_windows.c gs_socket_windows.c gs_app_protocol.c gs_console.c -O2 -Werror -Wall -lwsock32 -lws2_32 -DGS_PLATFORM_WINDOWS
+all: clean client client_debug server
+	echo "\033[1;32m\n    make all success\n\033[0m"
+
+client: $(BASE_SRCS) $(SERVER_SRCS)
+	$(CC) $^ -o $(SERVER_OUTPUT) $(CFLAGS)
+
+server: $(BASE_SRCS) $(CLIENT_SRCS)
+	$(CC) $^ -o $(SERVER_OUTPUT) $(CFLAGS)
+
+client_debug: $(BASE_SRCS) $(CLIENT_DEBUG_SRCS)
+	$(CC) $^ -o $(CLIENT_DEBUG_OUTPUT) $(CFLAGS)
 
 clean:
-	
+	rm -f *.o *.out
+
+%.o:%.c
+	$(CC) -c $< -o $@ $(CFLAGS)

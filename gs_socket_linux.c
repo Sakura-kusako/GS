@@ -1,3 +1,8 @@
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <unistd.h>
+
 #include "gs_socket.h"
 #include "gs_stdlib.h"
 #include "gs_net.h"
@@ -107,7 +112,7 @@ GS_S32 GS_SOCK_Recvfrom(GS_S32 s32Sock, GS_U8 *pu8Buf, GS_U32 u32Len, GS_S32 s32
 {
     GS_S32 s32Ret = GS_SUCCESS;
 
-    s32Ret = recvfrom(s32Sock, (char *)pu8Buf, u32Len, s32Flag, pstAddr, (int *)pu32AddrLen);
+    s32Ret = recvfrom(s32Sock, (char *)pu8Buf, u32Len, s32Flag, pstAddr, pu32AddrLen);
     if (s32Ret < 0)
     {
         //GS_ERROR("recvfrom error, GS_ERRNO = %d", GS_ERRNO);
@@ -212,10 +217,10 @@ GS_S32 GS_SOCK_Close(GS_S32 s32Sock)
 {
     GS_S32 s32Ret = GS_SUCCESS;
 
-    s32Ret = closesocket(s32Sock);
+    s32Ret = close(s32Sock);
     if (s32Ret < 0)
     {
-        GS_ERROR("closesocket error, GS_ERRNO = %d", GS_ERRNO);
+        GS_ERROR("close error, GS_ERRNO = %d", GS_ERRNO);
     }
 
     return s32Ret;

@@ -19,7 +19,7 @@ GS_S32 GS_CONSOLE_ParseCmd(GS_Char *szCmd, GS_S32 *pargc, GS_Char *argv[])
 
         pcPos = szCmd;
         while (s32Count < *pargc)
-        {
+        {
             pcTmp = GS_Strchr(pcPos, ' ');
             if (!pcTmp)
             {

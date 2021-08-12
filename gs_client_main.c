@@ -205,13 +205,13 @@ static GS_S32 GS_APP_Init(GS_ClientManager_S *pstManager)
 }
 
 static GS_Void GS_APP_DeInit(GS_ClientManager_S *pstManager)
-{
+{
     GS_S32 i = 0;
 
     for (i=0; i<GS_APP_MAX_PLAYER_NUM; i++)
     {
         if (pstManager->as32Socket[i] >= 0)
-        {
+        {
             GS_SOCK_Close(pstManager->as32Socket[i]);
         }
     }
@@ -223,7 +223,7 @@ static GS_S32 GS_APP_SendTextWithLen(GS_ClientManager_S *pstManager, GS_Char *sz
     GS_SockaddrIn_S stAddr = {0};
 
     if (!pstManager || !szStr || u32Len < 2)
-    {
+    {
         GS_ERROR("bad para");
         return GS_FAILED;
     }
@@ -249,7 +249,7 @@ static GS_S32 GS_APP_SendTextWithLen(GS_ClientManager_S *pstManager, GS_Char *sz
 static GS_S32 GS_APP_SendText(GS_ClientManager_S *pstManager, GS_Char *szStr)
 {
     if (!pstManager || !szStr)
-    {
+    {
         GS_ERROR("bad para");
         return GS_FAILED;
     }
@@ -265,7 +265,7 @@ static GS_S32 GS_APP_CmdDebug(GS_Void *pvData, GS_S32 argc, GS_Char *argv[])
     do
     {
         if ((1 != argc) || !argv || !pstManager)
-        {
+        {
             GS_ERROR("bad para");
             s32Ret = GS_CONSOLE_ERRNO_BAD_PARAMETER;
             break;
@@ -287,7 +287,7 @@ static GS_S32 GS_APP_CmdSetServerIPv4(GS_Void *pvData, GS_S32 argc, GS_Char *arg
     do
     {
         if ((1 != argc) || !argv || !pstManager)
-        {
+        {
             GS_ERROR("bad para");
             s32Ret = GS_CONSOLE_ERRNO_BAD_PARAMETER;
             break;
@@ -323,7 +323,7 @@ static GS_Void GS_APP_DefaultFrameParse(GS_Void *pvData, GS_U8 u8Type, GS_U32 u3
         case GS_APP_IE_TEXT:
         {
             if (u32Len > 1)
-            {
+            {
                 pu8Data[u32Len - 1] = '\0';
                 GS_INFO("<note> [%s]", pu8Data);
             }
@@ -362,7 +362,7 @@ static GS_Void GS_APP_DefaultFrameParse(GS_Void *pvData, GS_U8 u8Type, GS_U32 u3
 
             pstConsloeInfo = pstManager->pstConsoleInfoList;
             while (pstConsloeInfo->szCmd)
-            {
+            {
                 if (0 == GS_Strcmp(pstConsloeInfo->szCmd, s32Argv[0]))
                 {
                     if (pstConsloeInfo->fnEntry)

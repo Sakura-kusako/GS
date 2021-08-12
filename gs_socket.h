@@ -10,6 +10,11 @@ extern "C" {
 #ifdef GS_PLATFORM_LINUX
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <errno.h>
+
+#define GS_ERRNO_AGAIN      EAGAIN
+#define GS_ERRNO_INTR       EINTR
+#define GS_ERRNO_TIMEOUT    EAGAIN
 #endif
 #ifdef GS_PLATFORM_WINDOWS
 #include <winsock2.h>

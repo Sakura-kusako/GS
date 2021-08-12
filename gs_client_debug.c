@@ -131,7 +131,7 @@ static GS_Void GS_APP_DebugFrameParse(GS_Void *pvData, GS_U8 u8Type, GS_U32 u32L
         case GS_APP_IE_TEXT:
         {
             if (u32Len > 1)
-            {
+            {
                 pu8Data[u32Len - 1] = '\0';
                 GS_Printf("<note> [%s]\r\n", pu8Data);
             }
