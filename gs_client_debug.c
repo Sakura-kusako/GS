@@ -81,7 +81,7 @@ static GS_S32 GS_APP_Init(GS_DebugManager_S *pstManager)
                 continue;
             }
 
-            GS_ERROR("bind debug port success");
+            GS_INFO("bind debug port success");
             pstManager->s32Sock = s32Sock;
             pstManager->u16LocalDebugPort += i;
             break;

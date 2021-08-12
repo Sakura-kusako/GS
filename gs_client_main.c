@@ -397,6 +397,7 @@ static GS_Void GS_APP_StatusConnectingFrameParse(GS_Void *pvData, GS_U8 u8Type, 
     GS_S32 s32Ret = GS_SUCCESS;
     GS_ClientManager_S *pstManager = (GS_ClientManager_S *)pvData;
     GS_SockaddrIn_S stAddr;
+    GS_Char szStr[128] = {0};
 
     GS_AVOID_WARNING(s32Ret);
     GS_AVOID_WARNING(stAddr);
@@ -429,6 +430,9 @@ static GS_Void GS_APP_StatusConnectingFrameParse(GS_Void *pvData, GS_U8 u8Type, 
             pstManager->u8ClientStatus = EN_GS_CLIENT_STATUS_CONNECTED;
             GS_INFO("connecting --> connected, server "GS_IPV4_FMT":%u",
                 GS_IPV4_ARG(pstManager->au8ServerIPv4), pstManager->u16ServerTransmitPort);
+            GS_Snprintf(szStr, sizeof(szStr), GS_IPV4_FMT":%u",
+                GS_IPV4_ARG(pstManager->au8ServerIPv4), pstManager->u16ServerTransmitPort);
+            GS_APP_SendText(pstManager, szStr);
             break;
         }
 
@@ -773,7 +777,7 @@ static GS_Void GS_APP_ManagerInit(GS_ClientManager_S *pstManager, GS_ConsoleInfo
     GS_Memset(pstManager, 0, sizeof(GS_ClientManager_S));
     pstManager->pstConsoleInfoList = pstInfo;
     GS_Memset(pstManager->as32Socket, 0xFF, sizeof(pstManager->as32Socket));
-    GS_SOCK_SetIPv4Local(pstManager->au8ServerIPv4);
+    GS_SOCK_SetIPv4(pstManager->au8ServerIPv4, 106, 13, 239, 194);
     pstManager->u16ServerListenPort = 32768;
     pstManager->u16LocalGamePort = 10800;
 }
