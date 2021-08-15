@@ -631,7 +631,9 @@ static GS_S32 GS_APP_StatusListen(GS_ServerManager_S *pstManager)
         if (s32Ret < 0)
         {
             GS_ERROR("GS_SOCK_Recv error");
-            s32Ret = GS_FAILED;
+            GS_OS_SleepMs(10);
+            s32Ret = GS_SUCCESS;
+            //s32Ret = GS_FAILED;
             break;
         }
 
@@ -682,7 +684,9 @@ static GS_S32 GS_APP_StatusListen(GS_ServerManager_S *pstManager)
                 if (s32Ret < 0)
                 {
                     GS_ERROR("GS_APP_FrameToTransmit error");
-                    s32Ret = GS_FAILED;
+                    GS_OS_SleepMs(10);
+                    s32Ret = GS_SUCCESS;
+                    //s32Ret = GS_FAILED;
                     break;
                 }
 
@@ -694,7 +698,9 @@ static GS_S32 GS_APP_StatusListen(GS_ServerManager_S *pstManager)
                 if (s32Ret != pstManager->u32RecvLen)
                 {
                     GS_ERROR("GS_SOCK_Send error");
-                    s32Ret = GS_FAILED;
+                    GS_OS_SleepMs(10);
+                    s32Ret = GS_SUCCESS;
+                    //s32Ret = GS_FAILED;
                     break;
                 }
             }
