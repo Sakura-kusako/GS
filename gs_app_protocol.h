@@ -8,8 +8,6 @@
 extern "C" {
 #endif
 
-#define GS_APP_MAX_PLAYER_NUM   (5)
-
 #define GS_APP_FRAME_HEAD_LEN   (2)
 
 #define GS_APP_IE_THANSMIT              (0)     // 0(1) + len(1~3) + data(len-6) + IP:Port(6)

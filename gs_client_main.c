@@ -5,6 +5,9 @@
 #include "gs_stdlib.h"
 #include "gs_console.h"
 
+#define GS_APP_MAX_PLAYER_NUM   (15)
+#define GS_APP_PLAYER_ACTIVE_TIMEOUT_MS (10 * 60 * 1000) //10分钟
+
 typedef enum
 {
     EN_GS_CLIENT_STATUS_INIT = 0,
@@ -24,13 +27,20 @@ typedef struct
 
 typedef struct
 {
+    GS_Char szPlayerName[GS_APP_PLAYER_NAME_SIZE];  ///< 玩家名
+    GS_NetEndPoint_S stPlayerEndPoint;              ///< 玩家外网地址
+    GS_U16  u16LocalTransmitProt;                   ///< 本地传输端口
+    GS_U32  u32LastActiveTimeMs;                    ///< 最后一次活动时间
+} GS_ClientPlayer_S;
+
+typedef struct
+{
     GS_U8   au8ServerIPv4[GS_IPV4_LEN];     ///< 服务器IPv4地址
     GS_U16  u16ServerListenPort;            ///< 服务器监听端口
     GS_U16  u16ServerTransmitPort;          ///< 服务器传输端口
 
+    GS_ClientPlayer_S astPlayerInfo[GS_APP_MAX_PLAYER_NUM]; ///< 转发玩家信息
     GS_S32  as32Socket[GS_APP_MAX_PLAYER_NUM];              ///< 本地转发socket
-    GS_NetEndPoint_S astPlayerEndPoint[GS_APP_MAX_PLAYER_NUM]; ///< 其他玩家外网地址
-    GS_U16  au16LocalTransmitProt[GS_APP_MAX_PLAYER_NUM];   ///< 本地传输端口
     GS_U16  u16LocalGamePort;                               ///< 本地游戏客户端端口
     GS_U16  u16LocalDebugPort;                              ///< 本地调试器端口
 
@@ -64,7 +74,9 @@ static GS_ConsoleInfo_S s_astConsoleInfo[] =
 
 static GS_U8 APP_GetEndPointIndex(GS_ClientManager_S *pstManager, GS_U8 *pu8EndPoint)
 {
+    GS_ClientPlayer_S *pstPlayer = GS_NULL;
     GS_NetEndPoint_S *pstEP = GS_NULL;
+    GS_U32 u32TimeMs = 0;
     GS_U8 u8Index = GS_APP_MAX_PLAYER_NUM;
 
     if (!pstManager || !pu8EndPoint)
@@ -75,7 +87,7 @@ static GS_U8 APP_GetEndPointIndex(GS_ClientManager_S *pstManager, GS_U8 *pu8EndP
 
     for (u8Index=1; u8Index<GS_APP_MAX_PLAYER_NUM; u8Index++)
     {
-        pstEP = &pstManager->astPlayerEndPoint[u8Index];
+        pstEP = &pstManager->astPlayerInfo[u8Index].stPlayerEndPoint;
 
         if (0 == pstEP->u16Port)
         {
@@ -89,16 +101,34 @@ static GS_U8 APP_GetEndPointIndex(GS_ClientManager_S *pstManager, GS_U8 *pu8EndP
         }
     }
 
+    /* 如果没有空位则替换掉很久不活动的玩家 */
+    if (u8Index == GS_APP_MAX_PLAYER_NUM)
+    {
+        u32TimeMs = GS_OS_GetTimeMs();
+        for (u8Index=1; u8Index<GS_APP_MAX_PLAYER_NUM; u8Index++)
+        {
+            pstPlayer = &pstManager->astPlayerInfo[u8Index];
+            if (u32TimeMs - pstPlayer->u32LastActiveTimeMs >= GS_APP_PLAYER_ACTIVE_TIMEOUT_MS)
+            {
+                pstEP = &pstPlayer->stPlayerEndPoint;
+                GS_Memcpy(pstEP, pu8EndPoint, sizeof(GS_NetEndPoint_S));
+                break;
+            }
+        }
+    }
+
     return u8Index;
 }
 
 static GS_S32 GS_APP_Init(GS_ClientManager_S *pstManager)
 {
-    GS_SockaddrIn_S stAddr;
     GS_S32 s32Ret = GS_SUCCESS;
+    GS_SockaddrIn_S stAddr;
+    GS_ClientPlayer_S *pstPlayerInfo = GS_NULL;
     GS_S32 s32Sock = 0;
     GS_S32 i = 0;
     GS_S32 j = 0;
+    GS_U16 u16PortBase = 0;
 
     do
     {
@@ -109,9 +139,12 @@ static GS_S32 GS_APP_Init(GS_ClientManager_S *pstManager)
             break;
         }
 
+        u16PortBase = pstManager->astPlayerInfo[0].u16LocalTransmitProt;
+
         for (i=0; i<GS_APP_MAX_PLAYER_NUM; i++)
         {
-            pstManager->au16LocalTransmitProt[i] = pstManager->au16LocalTransmitProt[0] + i;
+            pstPlayerInfo = &pstManager->astPlayerInfo[i];
+            pstPlayerInfo->u16LocalTransmitProt = u16PortBase + i;
 
             s32Sock = GS_SOCK_Socket(GS_AF_INET, GS_SOCK_DGRAM, 0);
             if (s32Sock < 0)
@@ -128,8 +161,8 @@ static GS_S32 GS_APP_Init(GS_ClientManager_S *pstManager)
             /* 尝试5次bind直到成功 */
             for (j=0; j<250; j+=50)
             {
-                GS_INFO("socket(%d) bind(0.0.0.0:%u)", i, pstManager->au16LocalTransmitProt[i] + j);
-                stAddr.u16Port = GS_Htons(pstManager->au16LocalTransmitProt[i] + j);
+                GS_INFO("socket(%d) bind(0.0.0.0:%u)", i, pstPlayerInfo->u16LocalTransmitProt + j);
+                stAddr.u16Port = GS_Htons(pstPlayerInfo->u16LocalTransmitProt + j);
                 s32Ret = GS_SOCK_Bind(s32Sock, (GS_Sockaddr_S *)&stAddr, sizeof(GS_Sockaddr_S));
                 if (s32Ret < 0)
                 {
@@ -143,7 +176,7 @@ static GS_S32 GS_APP_Init(GS_ClientManager_S *pstManager)
                 }
                 else
                 {
-                    pstManager->au16LocalTransmitProt[i] += j;
+                    pstPlayerInfo->u16LocalTransmitProt += j;
                     break;
                 }
             }
@@ -546,6 +579,8 @@ static GS_Void GS_APP_StatusConnectedFrameParse(GS_Void *pvData, GS_U8 u8Type, G
                 break;
             }
 
+            pstManager->astPlayerInfo[s32Ret].u32LastActiveTimeMs = GS_OS_GetTimeMs();
+
             s32Ret = GS_SOCK_Send(pstManager->as32Socket[s32Ret], pu8Data, u32Len, 0);
             if (s32Ret != u32Len)
             {
@@ -683,7 +718,7 @@ static GS_S32 GS_APP_StatusConnected(GS_ClientManager_S *pstManager)
 
             pstManager->u32RecvLen = s32Ret;
 
-            if (pstManager->astPlayerEndPoint[s32Index].u16Port == 0)
+            if (pstManager->astPlayerInfo[s32Index].stPlayerEndPoint.u16Port == 0)
             {
                 GS_ERROR("Wait connected, skip send");
                 s32Ret = GS_SUCCESS;
@@ -691,7 +726,7 @@ static GS_S32 GS_APP_StatusConnected(GS_ClientManager_S *pstManager)
             }
 
             s32Ret = GS_APP_FrameToTransmit(pstManager->au8RecvBuf, &pstManager->u32RecvLen,
-                &pstManager->astPlayerEndPoint[s32Index]);
+                &pstManager->astPlayerInfo[s32Index].stPlayerEndPoint);
             if (s32Ret < 0)
             {
                 GS_ERROR("GS_APP_FrameToTransmit error");
@@ -711,6 +746,8 @@ static GS_S32 GS_APP_StatusConnected(GS_ClientManager_S *pstManager)
                 s32Ret = GS_FAILED;
                 break;
             }
+
+            pstManager->astPlayerInfo[s32Index].u32LastActiveTimeMs = GS_OS_GetTimeMs();
         }
     }while (0);
 
@@ -792,10 +829,10 @@ GS_Int main(GS_Int argc, GS_Char *argv[])
     }
 
     GS_APP_ManagerInit(pstManager, s_astConsoleInfo);
-    pstManager->au16LocalTransmitProt[0] = GS_Atoi(argv[1]);
+    pstManager->astPlayerInfo[0].u16LocalTransmitProt = GS_Atoi(argv[1]);
     pstManager->u16LocalDebugPort = GS_Atoi(argv[2]);
     GS_INFO("transmit port = %u, debug port = %u",
-        pstManager->au16LocalTransmitProt[0], pstManager->u16LocalDebugPort);
+        pstManager->astPlayerInfo[0].u16LocalTransmitProt, pstManager->u16LocalDebugPort);
 
     GS_OS_Window_Switch(0);
     fnThreadMain(pstManager);
